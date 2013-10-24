@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "protocol.h"
+#include "proton/object.h"
 
 #include <assert.h>
 #include <stdarg.h>
@@ -637,6 +638,45 @@ void pn_terminus_init(pn_terminus_t *terminus, pn_terminus_type_t type)
   terminus->filter = pn_data(16);
 }
 
+int pn_terminus_inspect(pn_terminus_t *terminus, pn_string_t *dst)
+{
+  int err;
+  err = pn_string_addf(dst, "{ _type_: 'terminus', address=");
+  if (err) return err;
+  err = pn_inspect(terminus->address, dst);
+  if (err) return err;
+  err = pn_string_addf(dst, ", durability:%d",
+                       terminus->durability);
+  if (err) return err;
+  err = pn_string_addf(dst, ", expiriy_policy:%d", terminus->expiry_policy);
+  if (err) return err;
+  err = pn_string_addf(dst, ", timeout:%d", terminus->timeout);
+  if (err) return err;
+  err = pn_string_addf(dst, ", dynamic:%d", terminus->dynamic);
+  if (err) return err;
+  err = pn_string_addf(dst, ", distribution_mode:%d", terminus->distribution_mode);
+  if (err) return err;
+  err = pn_string_addf(dst, ", properties:");
+  if (err) return err;
+  err = pn_inspect(terminus->properties, dst);
+  if (err) return err;
+  err = pn_string_addf(dst, ", capabilities:");
+  if (err) return err;
+  err = pn_inspect(terminus->capabilities, dst);
+  if (err) return err;
+  err = pn_string_addf(dst, ", outcomes:");
+  if (err) return err;
+  err = pn_inspect(terminus->outcomes, dst);
+  if (err) return err;
+  err = pn_string_addf(dst, ", filter:");
+  if (err) return err;
+  err = pn_inspect(terminus->filter, dst);
+  if (err) return err;
+  err = pn_string_addf(dst, "}");
+  if (err) return err;
+  return 0;
+}
+
 static void pn_link_finalize(void *object)
 {
   pn_link_t *link = (pn_link_t *) object;
@@ -662,7 +702,37 @@ static void pn_link_finalize(void *object)
 #define pn_link_initialize NULL
 #define pn_link_hashcode NULL
 #define pn_link_compare NULL
-#define pn_link_inspect NULL
+//#define pn_link_inspect NULL
+
+int pn_link_inspect(void *obj, pn_string_t *dst)
+{
+  pn_link_t *link = (pn_link_t*)obj;
+  int err;
+  err = pn_string_addf(dst, "{ _type_: 'link', name:");
+  if (err) return err;
+  err = pn_inspect(link->name, dst);
+  if (err) return err;
+  err = pn_string_addf(dst, "', source:");
+  if (err) return err;
+  err = pn_terminus_inspect(&link->source, dst);
+  if (err) return err;
+  err = pn_string_addf(dst, "', target:");
+  if (err) return err;
+  err = pn_terminus_inspect(&link->source, dst);
+  if (err) return err;
+  err = pn_string_addf(dst, "', remote_source:");
+  if (err) return err;
+  err = pn_terminus_inspect(&link->source, dst);
+  if (err) return err;
+  err = pn_string_addf(dst, "', remote_target:");
+  if (err) return err;
+  err = pn_terminus_inspect(&link->source, dst);
+  if (err) return err;
+  err = pn_string_addf(dst, "}");
+  if (err) return err;
+  return 0;
+}
+
 
 pn_link_t *pn_link_new(int type, pn_session_t *session, const char *name)
 {
