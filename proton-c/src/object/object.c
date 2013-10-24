@@ -690,7 +690,7 @@ void *pn_hash_value(pn_hash_t *hash, pn_handle_t entry)
 
 #define PNI_NULL_SIZE (-1)
 
-struct pn_string_t {
+struct pn_string_t_ {
   char *bytes;
   ssize_t size;       // PNI_NULL_SIZE (-1) means null
   size_t capacity;

@@ -134,6 +134,12 @@ PN_EXTERN size_t pn_string_capacity(pn_string_t *string);
 PN_EXTERN int pn_string_resize(pn_string_t *string, size_t size);
 PN_EXTERN int pn_string_copy(pn_string_t *string, pn_string_t *src);
 
+struct pn_string_t {
+  char *bytes;
+  ssize_t size;       // PNI_NULL_SIZE (-1) means null
+  size_t capacity;
+};
+
 
 #ifdef __cplusplus
 }
