@@ -38,7 +38,7 @@ class Test(common.Test):
     self.server_is_running_event = Event()
     self.running = True
     self.server_thread_started = False
-
+    self.address="amqp://0.0.0.0:12345"
     self.client = Messenger("client")
     self.client.timeout = self.timeout
 
@@ -64,9 +64,6 @@ class Test(common.Test):
       self.server_thread.join(self.timeout)
       self.server = None
 
-REJECT_ME = "*REJECT-ME*"
-
-class MessengerTest(Test):
 
   def run_server(self):
     if self.server_finite_credit:
@@ -124,6 +121,9 @@ class MessengerTest(Test):
       self.server.put(msg)
       self.server.settle()
 
+REJECT_ME = "*REJECT-ME*"
+
+class MessengerTest(Test):
   def testSendReceive(self, size=None):
     self.start()
     msg = Message()
