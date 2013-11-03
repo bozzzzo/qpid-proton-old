@@ -40,13 +40,14 @@ void die(const char *file, int line, const char *message)
   exit(1);
 }
 
-void usage()
+void usage(const char *address)
 {
   printf("Usage: recv [options] <addr>\n");
   printf("-c    \tPath to the certificate file.\n");
   printf("-k    \tPath to the private key file.\n");
   printf("-p    \tPassword for the private key.\n");
-  printf("<addr>\tAn address.\n");
+  printf("-r    \treply if reply_to is set. (can be specified more than once)\n");
+  printf("<addr>\tAn address. (%s)\n", address);
   exit(0);
 }
 
@@ -55,17 +56,20 @@ int main(int argc, char** argv)
   char* certificate = NULL;
   char* privatekey = NULL;
   char* password = NULL;
+  int reply = 0;
   char* address = (char *) "amqp://~0.0.0.0";
   int c;
   opterr = 0;
 
-  while((c = getopt(argc, argv, "hc:k:p:")) != -1)
+  while((c = getopt(argc, argv, "hrc:k:p:")) != -1)
   {
     switch(c)
     {
     case 'h':
-      usage();
+      usage(address);
       break;
+
+    case 'r': reply++; break;
 
     case 'c': certificate = optarg; break;
     case 'k': privatekey = optarg; break;
@@ -142,8 +146,24 @@ int main(int argc, char** argv)
 
       printf("Address: %s\n", pn_message_get_address(message));
       const char* subject = pn_message_get_subject(message);
-      printf("Subject: %s\n", subject ? subject : "(no subject)");
+      subject = subject ? subject : "(no subject)";
+      printf("Subject: %s\n", subject);
       printf("Content: %s\n", buffer);
+      for (int i = 0; i < reply; i++) {
+        const char *reply_to = pn_message_get_reply_to(message);
+        if (reply_to) {
+          printf("Reply %d/%d to %s\n", i, reply, reply_to);
+          pn_message_set_address(message, reply_to);
+          char subject_buffer[1024];
+          strcpy(subject_buffer, "Re: ");
+          strcat(subject_buffer, subject);
+          pn_message_set_subject(message, subject_buffer);
+          pn_messenger_put(messenger, message);
+          check(messenger);
+          pn_messenger_send(messenger, -1);
+          check(messenger);
+        }
+      }
     }
   }
 

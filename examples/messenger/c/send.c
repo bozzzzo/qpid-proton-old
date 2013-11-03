@@ -41,10 +41,13 @@ void die(const char *file, int line, const char *message)
   exit(1);
 }
 
-void usage()
+void usage(const char *address)
 {
   printf("Usage: send [-a addr] [message]\n");
-  printf("-a     \tThe target address [amqp[s]://domain[/name]]\n");
+  printf("-a     \tThe target address [amqp[s]://domain[/name]] (%s)\n", address);
+  printf("-n     \tThe messenger name (default uuid)\n");
+  printf("-r     \trequest reply and expect it (can be specified more than once)\n");
+  printf("-w     \tuncleanly exit before last reply is expected (can be specified more than once)\n");
   printf("message\tA text string to send.\n");
   exit(0);
 }
@@ -53,16 +56,21 @@ int main(int argc, char** argv)
 {
   int c;
   opterr = 0;
+  int wait_reply = 0;
+  int reply = 0;
   char * address = (char *) "amqp://0.0.0.0";
   char * msgtext = (char *) "Hello World!";
+  char * name = NULL;
 
-  while((c = getopt(argc, argv, "ha:b:c:")) != -1)
+  while((c = getopt(argc, argv, "hrwa:n:")) != -1)
   {
     switch(c)
     {
+    case 'h': usage(address); break;
+    case 'r': reply++; wait_reply++; break;
+    case 'w': wait_reply--; break;
     case 'a': address = optarg; break;
-    case 'h': usage(); break;
-
+    case 'n': name = optarg; break;
     case '?':
       if(optopt == 'a')
       {
@@ -88,17 +96,42 @@ int main(int argc, char** argv)
   pn_messenger_t * messenger;
 
   message = pn_message();
-  messenger = pn_messenger(NULL);
+  messenger = pn_messenger(name);
 
   pn_messenger_start(messenger);
 
   pn_message_set_address(message, address);
+  if (reply)
+    pn_message_set_reply_to(message, "~");
   pn_data_t *body = pn_message_body(message);
   pn_data_put_string(body, pn_bytes(strlen(msgtext), msgtext));
   pn_messenger_put(messenger, message);
   check(messenger);
   pn_messenger_send(messenger, -1);
   check(messenger);
+  for (int i = 0; i < reply; i++) {
+    if ( i < wait_reply) {
+      printf("wait reply %d/%d/%d\n", i, wait_reply, reply);
+      pn_messenger_recv(messenger, 1);
+      check(messenger);
+      pn_messenger_get(messenger, message);
+      check(messenger);
+
+      char buffer[1024];
+      size_t buffsize = sizeof(buffer);
+      pn_data_t *body = pn_message_body(message);
+      pn_data_format(body, buffer, &buffsize);
+
+      printf("Address: %s\n", pn_message_get_address(message));
+      const char* subject = pn_message_get_subject(message);
+      subject = subject ? subject : "(no subject)";
+      printf("Subject: %s\n", subject);
+      printf("Content: %s\n", buffer);
+    } else if (reply) {
+      printf("Unclean exit before reply %d/%d/%d\n", i, wait_reply, reply);
+      exit(0);
+    }
+  }
 
   pn_messenger_stop(messenger);
   pn_messenger_free(messenger);
