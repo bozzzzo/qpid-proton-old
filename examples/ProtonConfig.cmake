@@ -18,6 +18,6 @@
 #
 
 set (Proton_VERSION       ${PN_VERSION})
-set (Proton_INCLUDE_DIRS  ${CMAKE_SOURCE_DIR}/proton-c/include)
+set (Proton_INCLUDE_DIRS  ${CMAKE_CURRENT_SOURCE_DIR}/../proton-c/include)
 set (Proton_LIBRARIES     qpid-proton)
 set (Proton_FOUND True)
