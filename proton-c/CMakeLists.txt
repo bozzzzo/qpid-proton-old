@@ -71,7 +71,7 @@ include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 # TODO: This is only needed because the proton executable can use getopt on windows
 # if/when this executable gets sorted out remove
-include_directories ("${CMAKE_SOURCE_DIR}/examples/include")
+include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../examples/include")
 
 add_custom_command (
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/src/encodings.h
@@ -251,7 +251,7 @@ macro (pn_absolute_install_dir NAME VALUE PREFIX)
   elseif(IS_ABSOLUTE ${PREFIX})
     set(${NAME} "${PREFIX}/${VALUE}")
   else()
-    set(${NAME} "${CMAKE_BINARY_DIR}/${PREFIX}/${VALUE}")
+    set(${NAME} "${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}/${VALUE}")
   endif(IS_ABSOLUTE ${VALUE})
   get_filename_component(${NAME} ${${NAME}} ABSOLUTE)
 endmacro()
