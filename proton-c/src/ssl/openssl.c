@@ -19,6 +19,12 @@
  *
  */
 
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <assert.h>
+
 #include <proton/ssl.h>
 #include "./ssl-internal.h"
 #include <proton/engine.h>
@@ -29,12 +35,19 @@
 #include <openssl/ssl.h>
 #include <openssl/dh.h>
 #include <openssl/err.h>
+// WORKAROUND for openssl 1.0.1i and older. x509v3.h does not undefine these symbols
+#ifdef OPENSSL_SYS_WIN32
+/* Under Win32 these are defined in wincrypt.h */
+#undef X509_NAME
+#undef X509_CERT_PAIR
+#undef X509_EXTENSIONS
+#endif
+// make sure this is the last include
 #include <openssl/x509v3.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <assert.h>
 
+#if !defined(S_ISDIR)
+# define S_ISDIR(X) ((X) & _S_IFDIR)
+#endif
 
 /** @file
  * SSL/TLS support API.
@@ -210,7 +223,7 @@ static bool match_dns_pattern( const char *hostname,
   int slen = (int) strlen(hostname);
   if (memchr( pattern, '*', plen ) == NULL)
     return (plen == slen &&
-            strncasecmp( pattern, hostname, plen ) == 0);
+    !pn_i_eq_n_nocase(pattern, hostname, plen) == 0);
 
   /* dns wildcarded pattern - RFC2818 */
   char plabel[64];   /* max label length < 63 - RFC1034 */
@@ -240,15 +253,15 @@ static bool match_dns_pattern( const char *hostname,
 
     char *star = strchr( plabel, '*' );
     if (!star) {
-      if (strcasecmp( plabel, slabel )) return false;
+      if (!pn_i_eq_nocase( plabel, slabel )) return false;
     } else {
       *star = '\0';
       char *prefix = plabel;
       int prefix_len = strlen(prefix);
       char *suffix = star + 1;
       int suffix_len = strlen(suffix);
-      if (prefix_len && strncasecmp( prefix, slabel, prefix_len )) return false;
-      if (suffix_len && strncasecmp( suffix,
+      if (prefix_len && !pn_i_eq_n_nocase( prefix, slabel, prefix_len )) return false;
+      if (suffix_len && !pn_i_eq_n_nocase(suffix,
                                      slabel + (strlen(slabel) - suffix_len),
                                      suffix_len )) return false;
     }

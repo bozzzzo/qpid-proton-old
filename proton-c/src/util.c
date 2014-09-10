@@ -206,13 +206,22 @@ void pn_fatal(const char *fmt, ...)
   va_end(ap);
 }
 
-static bool pn_i_eq_nocase(const char *a, const char *b)
+bool pn_i_eq_n_nocase(const char *a, const char *b, int len)
 {
-    while (*b) {
-        if (tolower(*a++) != tolower(*b++))
-            return false;
-    }
-    return !(*a);
+  while (*b && len-- > 0 ) {
+    if (tolower(*a++) != tolower(*b++))
+      return false;
+  }
+  return !(*a) && !(*b);
+}
+
+bool pn_i_eq_nocase(const char *a, const char *b)
+{
+  while (*b) {
+    if (tolower(*a++) != tolower(*b++))
+      return false;
+  }
+  return !(*a);
 }
 
 bool pn_env_bool(const char *name)
